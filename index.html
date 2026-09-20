@@ -304,16 +304,15 @@
 
 <script>
   /* ============================================
-     🔐 كلمة المرور (غيّرها من هنا فقط)
+     🔐 كلمة المرور
      ============================================ */
-  const SECRET_PASSWORD = "202326";
+  const SECRET_PASSWORD = "202336";
 
   let records = JSON.parse(localStorage.getItem('records')) || [];
   let pendingAction = null;
 
   /* ================= التحقق من كلمة السر ================= */
   window.addEventListener('DOMContentLoaded', () => {
-    // التحقق من الجلسة
     if (sessionStorage.getItem('loggedIn') === 'true') {
       document.getElementById('loginOverlay').classList.add('hidden');
       document.getElementById('logoutBtn').style.display = 'block';
