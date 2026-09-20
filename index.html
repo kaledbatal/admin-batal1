@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام التسجيل</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .container {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 900px;
+    padding: 30px;
+    margin-top: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #4a3f8f;
+    margin-bottom: 25px;
+    font-size: 28px;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 15px;
+  }
+  .tabs { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+  .tab {
+    flex: 1; padding: 12px; border: none; border-radius: 10px;
+    background: #eee; color: #555; font-size: 16px; font-weight: bold;
+    cursor: pointer; transition: all 0.3s; min-width: 120px;
+  }
+  .tab.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+  }
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.4s; }
+  @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+  .form-group { margin-bottom: 18px; }
+  label { display: block; margin-bottom: 6px; color: #4a3f8f; font-weight: bold; font-size: 15px; }
+  input {
+    width: 100%; padding: 12px 15px; border: 2px solid #ddd;
+    border-radius: 10px; font-size: 15px; transition: all 0.3s; background: #f9f9ff;
+  }
+  input:focus {
+    outline: none; border-color: #667eea; background: #fff;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+  }
+
+  .btn {
+    padding: 12px 25px; border: none; border-radius: 10px;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    transition: all 0.3s; color: #fff;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+  .btn-save { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .btn-print { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .btn-clear { background: linear-gradient(135deg, #eb3349, #f45c43); }
+  .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); width: 100%; margin-top: 10px; padding: 15px; font-size: 17px;}
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin-top: 15px;
+    border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  th, td { padding: 12px 10px; text-align: center; font-size: 14px; }
+  th { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+  tr:nth-child(even) td { background: #f5f5ff; }
+  tr:hover td { background: #e8eaff; }
+
+  .empty { text-align: center; padding: 40px; color: #999; font-size: 16px; }
+  .toast {
+    position: fixed; top: 20px; left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #38ef7d; color: #fff; padding: 15px 30px;
+    border-radius: 10px; font-weight: bold;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: transform 0.4s; z-index: 1000;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #f45c43; }
+
+  .del-btn {
+    background: #f45c43; color: #fff; border: none;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .del-btn:hover { background: #eb3349; }
+
+  /* ===== نافذة التحذير ===== */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000; opacity: 0; visibility: hidden;
+    transition: all 0.3s;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal {
+    background: #fff; border-radius: 20px; padding: 30px;
+    max-width: 420px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+    transform: scale(0.8); transition: transform 0.3s;
+  }
+  .modal-overlay.show .modal { transform: scale(1); }
+  .modal-icon {
+    font-size: 60px; margin-bottom: 15px;
+    animation: shake 0.6s;
+  }
+  @keyframes shake {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+  }
+  .modal h3 { color: #eb3349; margin-bottom: 12px; font-size: 22px; }
+  .modal p { color: #555; margin-bottom: 25px; font-size: 15px; line-height: 1.6; }
+  .modal-info {
+    background: #fff5f5; border-right: 4px solid #eb3349;
+    padding: 12px; border-radius: 8px; margin-bottom: 20px;
+    text-align: right; color: #333; font-size: 14px;
+  }
+  .modal-info strong { color: #eb3349; }
+  .modal-buttons { display: flex; gap: 10px; }
+  .modal-buttons button { flex: 1; }
+  .btn-cancel { background: #ddd; color: #333; }
+  .btn-cancel:hover { background: #ccc; }
+  .btn-confirm-del { background: linear-gradient(135deg, #eb3349, #f45c43); }
+
+  /* ===== شاشة كلمة السر ===== */
+  .login-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 3000;
+    transition: all 0.5s;
+  }
+  .login-overlay.hidden {
+    opacity: 0; visibility: hidden;
+  }
+  .login-box {
+    background: #fff; border-radius: 20px; padding: 40px 35px;
+    max-width: 400px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+    animation: slideUp 0.5s;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .login-icon {
+    font-size: 60px; margin-bottom: 15px;
+  }
+  .login-box h2 {
+    color: #4a3f8f; margin-bottom: 10px; font-size: 24px;
+  }
+  .login-box p {
+    color: #666; margin-bottom: 25px; font-size: 14px;
+  }
+  .login-box input {
+    text-align: center; font-size: 18px; letter-spacing: 5px;
+    font-weight: bold;
+  }
+  .login-btn {
+    width: 100%; padding: 14px; margin-top: 15px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: 17px; font-weight: bold; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102,126,234,0.5);
+  }
+  .login-error {
+    color: #eb3349; font-size: 14px; margin-top: 12px;
+    font-weight: bold;
+    display: none;
+  }
+  .login-error.show { display: block; animation: shake 0.5s; }
+
+  .logout-btn {
+    position: fixed; top: 20px; left: 20px;
+    background: rgba(255,255,255,0.9); color: #4a3f8f;
+    border: 2px solid #667eea; padding: 8px 18px;
+    border-radius: 10px; font-weight: bold; cursor: pointer;
+    font-size: 14px; z-index: 100;
+    transition: all 0.3s;
+  }
+  .logout-btn:hover { background: #667eea; color: #fff; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container, .login-overlay, .modal-overlay, .logout-btn { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 🔐 شاشة كلمة السر -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-icon">🔐</div>
+    <h2>الدخول محمي</h2>
+    <p>الرجاء إدخال كلمة المرور للمتابعة</p>
+    <input type="password" id="passwordInput" placeholder="••••••" maxlength="20" onkeypress="if(event.key==='Enter') checkPassword()">
+    <button class="login-btn" onclick="checkPassword()">🔓 دخول</button>
+    <div class="login-error" id="loginError">❌ كلمة المرور غير صحيحة</div>
+  </div>
+</div>
+
+<!-- 🚪 زر خروج -->
+<button class="logout-btn" onclick="logout()" id="logoutBtn" style="display:none;">🚪 خروج</button>
+
+<div class="container">
+  <h1>📋 نظام التسجيل</h1>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('register', this)">📝 تسجيل</button>
+    <button class="tab" onclick="switchTab('records', this)">📊 السجل</button>
+    <button class="tab" onclick="switchTab('settings', this)">⚙️ الإعدادات</button>
+  </div>
+
+  <!-- قسم التسجيل -->
+  <div id="register" class="section active">
+    <div class="form-group">
+      <label>الاسم</label>
+      <input type="text" id="firstName" placeholder="أدخل الاسم">
+    </div>
+    <div class="form-group">
+      <label>اللقب</label>
+      <input type="text" id="lastName" placeholder="أدخل اللقب">
+    </div>
+    <div class="form-group">
+      <label>اسم الأب</label>
+      <input type="text" id="fatherName" placeholder="أدخل اسم الأب">
+    </div>
+    <div class="form-group">
+      <label>اسم الأم</label>
+      <input type="text" id="motherName" placeholder="أدخل اسم الأم">
+    </div>
+    <div class="form-group">
+      <label>رقم الهوية</label>
+      <input type="text" id="idNumber" placeholder="أدخل رقم الهوية">
+    </div>
+    <div class="form-group">
+      <label>رقم الهاتف</label>
+      <input type="tel" id="phone" placeholder="أدخل رقم الهاتف">
+    </div>
+    <div class="form-group">
+      <label>💰 كم دفع رعبون</label>
+      <input type="number" id="deposit" placeholder="أدخل مبلغ العربون" min="0" step="any">
+    </div>
+    <button class="btn btn-primary" onclick="saveRecord()">💾 حفظ التسجيل</button>
+  </div>
+
+  <!-- قسم السجل -->
+  <div id="records" class="section">
+    <div class="actions">
+      <button class="btn btn-print" onclick="printRecords()">🖨️ طباعة</button>
+      <button class="btn btn-clear" onclick="askClearAll()">🗑️ مسح السجل</button>
+    </div>
+    <div id="recordsContainer"></div>
+  </div>
+
+  <!-- قسم الإعدادات -->
+  <div id="settings" class="section">
+    <div class="actions">
+      <button class="btn btn-save" onclick="saveToFile()">💾 حفظ في ملف</button>
+      <button class="btn btn-clear" onclick="askClearAll()">🗑️ مسح السجل</button>
+    </div>
+    <p style="color:#666; text-align:center; margin-top:20px; line-height:1.8;">
+      يمكنك من هنا حفظ جميع البيانات في ملف على جهازك، أو مسح السجل بالكامل.
+    </p>
+  </div>
+</div>
+
+<!-- نافذة التحذير -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon">⚠️</div>
+    <h3 id="modalTitle">تحذير</h3>
+    <p id="modalMessage">هل أنت متأكد؟</p>
+    <div class="modal-info" id="modalInfo" style="display:none;"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" onclick="closeModal()">❌ إلغاء</button>
+      <button class="btn btn-confirm-del" id="modalConfirmBtn">✅ موافق، احذف</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  /* ============================================
+     🔐 كلمة المرور (غيّرها من هنا فقط)
+     ============================================ */
+  const SECRET_PASSWORD = "202326";
+
+  let records = JSON.parse(localStorage.getItem('records')) || [];
+  let pendingAction = null;
+
+  /* ================= التحقق من كلمة السر ================= */
+  window.addEventListener('DOMContentLoaded', () => {
+    // التحقق من الجلسة
+    if (sessionStorage.getItem('loggedIn') === 'true') {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('logoutBtn').style.display = 'block';
+    }
+  });
+
+  function checkPassword() {
+    const input = document.getElementById('passwordInput').value;
+    const error = document.getElementById('loginError');
+
+    if (input === SECRET_PASSWORD) {
+      sessionStorage.setItem('loggedIn', 'true');
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('logoutBtn').style.display = 'block';
+      error.classList.remove('show');
+      document.getElementById('passwordInput').value = '';
+      showToast('✅ مرحباً بك');
+    } else {
+      error.classList.add('show');
+      document.getElementById('passwordInput').value = '';
+      setTimeout(() => error.classList.remove('show'), 3000);
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('logoutBtn').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  /* ================= التبويبات ================= */
+  function switchTab(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'records') renderRecords();
+  }
+
+  function showToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (error ? ' error' : '');
+    setTimeout(() => t.className = 'toast', 2500);
+  }
+
+  /* ================= نافذة التحذير ================= */
+  function openModal(title, message, info, icon, onConfirm) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('modalIcon').textContent = icon || '⚠️';
+
+    const infoBox = document.getElementById('modalInfo');
+    if (info) {
+      infoBox.innerHTML = info;
+      infoBox.style.display = 'block';
+    } else {
+      infoBox.style.display = 'none';
+    }
+
+    pendingAction = onConfirm;
+    document.getElementById('confirmModal').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('confirmModal').classList.remove('show');
+    pendingAction = null;
+  }
+
+  document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+    if (pendingAction) pendingAction();
+    closeModal();
+  });
+
+  document.getElementById('confirmModal').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmModal') closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  /* ================= الحفظ ================= */
+  function saveRecord() {
+    const data = {
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
+      fatherName: document.getElementById('fatherName').value.trim(),
+      motherName: document.getElementById('motherName').value.trim(),
+      idNumber: document.getElementById('idNumber').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      deposit: document.getElementById('deposit').value.trim()
+    };
+
+    if (!data.firstName || !data.lastName || !data.fatherName || !data.motherName || !data.idNumber || !data.phone || !data.deposit) {
+      showToast('⚠️ يرجى ملء جميع الحقول', true);
+      return;
+    }
+
+    data.date = new Date().toLocaleString('ar-EG');
+    records.push(data);
+    localStorage.setItem('records', JSON.stringify(records));
+
+    ['firstName','lastName','fatherName','motherName','idNumber','phone','deposit'].forEach(id => document.getElementById(id).value = '');
+    showToast('✅ تم حفظ التسجيل بنجاح');
+  }
+
+  /* ================= عرض السجلات ================= */
+  function renderRecords() {
+    const container = document.getElementById('recordsContainer');
+    if (records.length === 0) {
+      container.innerHTML = '<div class="empty">لا توجد سجلات حالياً 📭</div>';
+      return;
+    }
+
+    let html = `<table>
+      <thead>
+        <tr>
+          <th>#</th><th>الاسم</th><th>اللقب</th>
+          <th>اسم الأب</th><th>اسم الأم</th>
+          <th>رقم الهوية</th><th>رقم الهاتف</th>
+          <th>💰 العربون</th>
+          <th>حذف</th>
+        </tr>
+      </thead><tbody>`;
+
+    records.forEach((r, i) => {
+      html += `<tr>
+        <td>${i + 1}</td>
+        <td>${r.firstName}</td>
+        <td>${r.lastName}</td>
+        <td>${r.fatherName}</td>
+        <td>${r.motherName}</td>
+        <td>${r.idNumber}</td>
+        <td>${r.phone}</td>
+        <td>${r.deposit || '-'}</td>
+        <td>
+          <button class="del-btn" onclick="askDeleteOne(${i})">🗑️ حذف</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  /* ================= الحذف الفردي ================= */
+  function askDeleteOne(index) {
+    const r = records[index];
+    const info = `
+      <div>👤 <strong>${r.firstName} ${r.lastName}</strong></div>
+      <div>🪪 رقم الهوية: <strong>${r.idNumber}</strong></div>
+      <div>📞 الهاتف: <strong>${r.phone}</strong></div>
+      <div>💰 العربون: <strong>${r.deposit || '-'}</strong></div>
+    `;
+
+    openModal(
+      'تحذير: حذف سجل',
+      'هل أنت موافق على حذف بيانات هذا الشخص؟ لا يمكن التراجع عن هذه العملية!',
+      info,
+      '🗑️',
+      () => {
+        records.splice(index, 1);
+        localStorage.setItem('records', JSON.stringify(records));
+        renderRecords();
+        showToast('🗑️ تم حذف السجل بنجاح');
+      }
+    );
+  }
+
+  /* ================= مسح كل السجل ================= */
+  function askClearAll() {
+    if (records.length === 0) {
+      showToast('السجل فارغ بالفعل', true);
+      return;
+    }
+
+    const info = `
+      <div>📊 عدد السجلات: <strong>${records.length}</strong></div>
+      <div style="margin-top:6px;">سيتم حذف <strong>جميع</strong> البيانات نهائياً</div>
+    `;
+
+    openModal(
+      '⚠️ تحذير خطير: مسح كامل السجل',
+      'هل أنت موافق على مسح جميع البيانات؟ لا يمكن التراجع أبداً!',
+      info,
+      '🚨',
+      () => {
+        records = [];
+        localStorage.setItem('records', JSON.stringify(records));
+        renderRecords();
+        showToast('✅ تم مسح السجل بالكامل');
+      }
+    );
+  }
+
+  /* ================= الطباعة ================= */
+  function printRecords() {
+    if (records.length === 0) {
+      showToast('لا توجد سجلات للطباعة', true);
+      return;
+    }
+
+    let rowsHtml = '';
+    records.forEach((r, i) => {
+      rowsHtml += `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${r.firstName}</td>
+          <td>${r.lastName}</td>
+          <td>${r.fatherName}</td>
+          <td>${r.motherName}</td>
+          <td>${r.idNumber}</td>
+          <td>${r.phone}</td>
+          <td>${r.deposit || '-'}</td>
+        </tr>
+      `;
+    });
+
+    const printDate = new Date().toLocaleString('ar-EG');
+
+    const printWindow = window.open('', '_blank', 'width=1000,height=700');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>سجل التسجيلات</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+          body { direction: rtl; margin: 0; padding: 0; background: #fff; }
+          .print-header {
+            text-align: center; margin-bottom: 20px;
+            border-bottom: 3px solid #667eea; padding-bottom: 12px;
+          }
+          .print-header h1 { color: #4a3f8f; margin: 0 0 8px 0; font-size: 24px; }
+          .print-header p { color: #666; margin: 0; font-size: 13px; }
+          table {
+            width: 100%; border-collapse: collapse;
+            direction: rtl; table-layout: fixed;
+          }
+          th, td {
+            border: 1px solid #999; padding: 8px 6px;
+            text-align: center; font-size: 13px;
+            word-wrap: break-word; overflow-wrap: break-word;
+          }
+          th {
+            background: #667eea !important; color: #fff !important;
+            font-weight: bold;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+          }
+          tbody tr:nth-child(even) td {
+            background: #f5f5ff !important;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+          }
+          th:nth-child(1), td:nth-child(1) { width: 5%; }
+          th:nth-child(2), td:nth-child(2) { width: 13%; }
+          th:nth-child(3), td:nth-child(3) { width: 13%; }
+          th:nth-child(4), td:nth-child(4) { width: 15%; }
+          th:nth-child(5), td:nth-child(5) { width: 15%; }
+          th:nth-child(6), td:nth-child(6) { width: 14%; }
+          th:nth-child(7), td:nth-child(7) { width: 14%; }
+          th:nth-child(8), td:nth-child(8) { width: 11%; }
+          .print-footer {
+            margin-top: 20px; text-align: center;
+            font-size: 12px; color: #888;
+            border-top: 1px solid #ddd; padding-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1>📋 سجل التسجيلات</h1>
+          <p>تاريخ الطباعة: ${printDate} — عدد السجلات: ${records.length}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>اللقب</th>
+              <th>اسم الأب</th>
+              <th>اسم الأم</th>
+              <th>رقم الهوية</th>
+              <th>رقم الهاتف</th>
+              <th>💰 العربون</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="print-footer">نظام التسجيل - جميع الحقوق محفوظة</div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.focus(); window.print(); }, 300);
+          };
+          window.onafterprint = function() { window.close(); };
+        <\/script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  }
+
+  /* ================= حفظ في ملف ================= */
+  function saveToFile() {
+    if (records.length === 0) {
+      showToast('لا توجد بيانات لحفظها', true);
+      return;
+    }
+
+    let content = 'سجل التسجيلات\n' + '='.repeat(50) + '\n\n';
+    records.forEach((r, i) => {
+      content += `رقم: ${i + 1}\n`;
+      content += `الاسم: ${r.firstName}\n`;
+      content += `اللقب: ${r.lastName}\n`;
+      content += `اسم الأب: ${r.fatherName}\n`;
+      content += `اسم الأم: ${r.motherName}\n`;
+      content += `رقم الهوية: ${r.idNumber}\n`;
+      content += `رقم الهاتف: ${r.phone}\n`;
+      content += `العربون: ${r.deposit || '-'}\n`;
+      content += `التاريخ: ${r.date || '-'}\n`;
+      content += '-'.repeat(30) + '\n';
+    });
+
+    const blob = new Blob(['\ufeff' + content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'سجل_التسجيلات.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('💾 تم حفظ الملف بنجاح');
+  }
+
+  renderRecords();
+</script>
+
+</body>
+</html>
